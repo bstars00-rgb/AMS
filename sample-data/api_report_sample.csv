@@ -1,0 +1,6 @@
+Supplier,Hotel ID,Hotel Name,Country,City,Address,Active Status,Mapping Status,Hotel Creation Type,Room Name,Bed Type,Extra Bed Type,Internal Hotel Name,Internal Address,Internal Room Name,Internal Bed Type,Internal Extra Bed Type
+Agent A,KR001,Lotte Hotel Seoul,Korea,Seoul,"30 Eulji-ro, Jung-gu, Seoul",Active,Unmapped,Old Hotel,Deluxe Double Room,Double,Single Bed,LOTTE HOTEL SEOUL,"30 Eulji-ro, Jung-gu, Seoul",Deluxe Double,Double,Single Bed
+Agent B,JP002,Kyoto Ryokan Sakura,Japan,Kyoto,"1-2-3 Gion, Kyoto",Active,Partial Mapped,Old Hotel,Japanese Style Room,Futon,Tatami,Kyoto Sakura Ryokan,"1-2-4 Gion, Kyoto",Japanese Room,Futon,Single Bed
+Agent C,VN003,Ocean Bay Resort Phu Quoc,Vietnam,Phu Quoc,"Ong Lang Beach, Phu Quoc",Active,Unmapped,Newly Created Hotel,Ocean View Villa,King,,,,,,
+Agent A,TH004,Bangkok Riverside Hotel,Thailand,Bangkok,"12 Charoen Krung Rd, Bangkok",Active,Mapped,Old Hotel,Superior King,King,Sofa Bed,Bangkok Riverside Hotel,"12 Charoen Krung Rd, Bangkok",Superior King,Queen,Sofa Bed
+Agent D,ID005,Bali Sunset Villas,Indonesia,Bali,"Jl. Pantai Berawa, Canggu, Bali",Inactive,Mapped,Old Hotel,One Bedroom Pool Villa,King,Rollaway,Bali Sunset Villa,"Jl. Pantai Berawa, Canggu, Bali",1BR Pool Villa,King,Rollaway
