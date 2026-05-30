@@ -3,29 +3,25 @@ import { useI18n, type Lang } from "../i18n";
 import { useStore } from "../store";
 
 const nav = [
-  { to: "/", key: "nav.upload", end: true, icon: "⭱" },
+  { to: "/", key: "nav.load", end: true, icon: "⭱" },
   { to: "/review", key: "nav.review", icon: "▤" },
-  { to: "/prompts", key: "nav.prompts", icon: "✦" },
   { to: "/export", key: "nav.export", icon: "⭳" },
 ];
 
 function LangToggle() {
   const { lang, setLang, t } = useI18n();
-  const opts: { v: Lang; key: string }[] = [
-    { v: "ko", key: "lang.ko" },
-    { v: "en", key: "lang.en" },
-  ];
+  const opts: Lang[] = ["ko", "en"];
   return (
     <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
-      {opts.map((o) => (
+      {opts.map((v) => (
         <button
-          key={o.v}
-          onClick={() => setLang(o.v)}
+          key={v}
+          onClick={() => setLang(v)}
           className={`rounded-md px-3 py-1 text-xs font-medium transition ${
-            lang === o.v ? "bg-white text-brand-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            lang === v ? "bg-white text-brand-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
           }`}
         >
-          {t(o.key)}
+          {t(`lang.${v}`)}
         </button>
       ))}
     </div>
@@ -34,7 +30,7 @@ function LangToggle() {
 
 export default function Layout() {
   const { t } = useI18n();
-  const { fileName, hasResults, rows, clearAll } = useStore();
+  const { masterInfo, clientInfo, matches, clearAll } = useStore();
 
   return (
     <div className="flex min-h-screen">
@@ -67,21 +63,20 @@ export default function Layout() {
           ))}
         </nav>
 
-        {hasResults && (
-          <div className="border-t border-gray-100 px-4 py-3 text-[11px] text-gray-400">
-            <div className="truncate" title={fileName}>{fileName}</div>
-            <div>{rows.length} {t("common.rows")}</div>
-            <button onClick={clearAll} className="mt-2 text-red-500 hover:underline">
-              {t("common.clear")}
-            </button>
+        {(masterInfo || clientInfo) && (
+          <div className="space-y-0.5 border-t border-gray-100 px-4 py-3 text-[11px] text-gray-400">
+            {masterInfo && <div className="truncate" title={masterInfo.fileName}>📦 {masterInfo.count} {t("load.rooms")}</div>}
+            {clientInfo && <div className="truncate" title={clientInfo.fileName}>📥 {clientInfo.count} {t("load.rooms")}</div>}
+            {matches.length > 0 && <div>✓ {matches.length} {t("common.rows")}</div>}
+            <button onClick={clearAll} className="mt-1 text-red-500 hover:underline">{t("common.clear")}</button>
           </div>
         )}
-        <div className="px-4 py-3 text-[11px] text-gray-300">v1.0 · no backend</div>
+        <div className="px-4 py-3 text-[11px] text-gray-300">v2.0 · room matcher</div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between gap-4 border-b border-gray-200 bg-white px-6 py-3">
-          <div className="text-sm text-gray-400">{t("app.tagline")}</div>
+          <div className="truncate text-sm text-gray-400">{t("app.tagline")}</div>
           <LangToggle />
         </header>
         <main className="flex-1 overflow-y-auto px-6 py-6">

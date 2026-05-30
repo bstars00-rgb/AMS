@@ -1,92 +1,92 @@
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import type { AnalyzedRow } from "../types";
-import { FIELD_ORDER } from "./columns";
-import { remarksText } from "./format";
+import type { MatchRow } from "../types";
 
 type T = (key: string, vars?: Record<string, string | number>) => string;
 
 export type ExportScope =
   | "ALL"
-  | "HIGH_PRIORITY"
-  | "HIGH_RISK"
-  | "STAKEHOLDER"
-  | "AGENT"
-  | "NEW_CREATION"
-  | "EDITED";
+  | "CONFIRMED"
+  | "AUTO"
+  | "REVIEW"
+  | "NOMATCH"
+  | "NEED_CREATION"
+  | "UNLINKED";
 
 export const EXPORT_SCOPES: ExportScope[] = [
   "ALL",
-  "HIGH_PRIORITY",
-  "HIGH_RISK",
-  "STAKEHOLDER",
-  "AGENT",
-  "NEW_CREATION",
-  "EDITED",
+  "CONFIRMED",
+  "AUTO",
+  "REVIEW",
+  "NOMATCH",
+  "NEED_CREATION",
+  "UNLINKED",
 ];
 
-export function filterByScope(rows: AnalyzedRow[], scope: ExportScope): AnalyzedRow[] {
+export function filterByScope(rows: MatchRow[], scope: ExportScope): MatchRow[] {
   switch (scope) {
-    case "HIGH_PRIORITY":
-      return rows.filter((r) => r.priority === "HIGH");
-    case "HIGH_RISK":
-      return rows.filter((r) => r.riskLevel === "HIGH");
-    case "STAKEHOLDER":
-      return rows.filter((r) => r.stakeholderConfirmationRequired);
-    case "AGENT":
-      return rows.filter((r) => r.agentRequestRequired);
-    case "NEW_CREATION":
-      return rows.filter(
-        (r) =>
-          r.suggestedAction === "REQUEST_NEW_HOTEL_CREATION" ||
-          r.suggestedAction === "REQUEST_NEW_ROOM_CREATION"
-      );
-    case "EDITED":
-      return rows.filter((r) => r.edited);
+    case "CONFIRMED":
+      return rows.filter((r) => r.status === "CONFIRMED");
+    case "AUTO":
+      return rows.filter((r) => r.band === "AUTO");
+    case "REVIEW":
+      return rows.filter((r) => r.band === "REVIEW");
+    case "NOMATCH":
+      return rows.filter((r) => r.band === "NOMATCH");
+    case "NEED_CREATION":
+      return rows.filter((r) => r.status === "NEED_CREATION");
+    case "UNLINKED":
+      return rows.filter((r) => !r.hotelLinked);
     case "ALL":
     default:
       return rows;
   }
 }
 
-// Build localized export records (header label -> value).
-function toRecords(rows: AnalyzedRow[], t: T, includePrompt: boolean): Record<string, string>[] {
+function chosen(row: MatchRow) {
+  return row.candidates.find((c) => c.roomCode === row.chosenRoomCode);
+}
+
+function toRecords(rows: MatchRow[], t: T): Record<string, string>[] {
   return rows.map((r) => {
-    const rec: Record<string, string> = {};
-    rec[t("col.rowNo")] = String(r.id);
-    for (const f of FIELD_ORDER) rec[t(`field.${f}`)] = r[f] ?? "";
-    rec[t("col.priority")] = t(`level.${r.priority}`);
-    rec[t("col.risk")] = t(`level.${r.riskLevel}`);
-    rec[t("col.action")] = t(`action.${r.suggestedAction}`);
-    rec[t("col.stakeholder")] = r.stakeholderConfirmationRequired ? t("common.yes") : t("common.no");
-    rec[t("col.agent")] = r.agentRequestRequired ? t("common.yes") : t("common.no");
-    rec[t("col.remarks")] = remarksText(r, t);
-    if (includePrompt) rec[t("col.aiPrompt")] = r.aiPrompt ?? "";
-    rec[t("col.reviewedBy")] = r.reviewedBy ?? "";
-    rec[t("col.reviewedDate")] = r.reviewedDate ?? "";
-    return rec;
+    const c = chosen(r);
+    const best = r.candidates[0];
+    return {
+      [t("col.clientHotel")]: r.clientHotelName,
+      [t("col.clientHotelCode")]: r.clientHotelCode,
+      [t("col.clientRoomId")]: r.id,
+      [t("col.clientRoom")]: r.clientRoomName,
+      [t("col.clientBed")]: r.clientBedType,
+      [t("col.ourHotel")]: r.masterHotelName,
+      [t("col.ourHotelCode")]: r.masterHotelCode,
+      [t("col.expedia")]: r.expediaCode,
+      [t("col.ourRoomCode")]: r.chosenRoomCode || "",
+      [t("col.ourRoom")]: c?.roomName ?? "",
+      [t("col.confidence")]: String((c ?? best)?.score ?? ""),
+      [t("col.band")]: t(`band.${r.band}`),
+      [t("col.status")]: t(`status.${r.status}`),
+      [t("col.remarks")]: r.remarks,
+      [t("col.website")]: r.websiteUrl,
+      [t("col.reviewedBy")]: r.reviewedBy,
+      [t("col.reviewedDate")]: r.reviewedDate,
+    };
   });
 }
 
-function timestamp(): string {
+function ts(): string {
   return new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
 }
 
-export function exportCsv(rows: AnalyzedRow[], t: T, includePrompt: boolean) {
-  const records = toRecords(rows, t, includePrompt);
-  const ws = XLSX.utils.json_to_sheet(records);
+export function exportCsv(rows: MatchRow[], t: T) {
+  const ws = XLSX.utils.json_to_sheet(toRecords(rows, t));
   const csv = XLSX.utils.sheet_to_csv(ws);
-  // Prepend BOM so Excel renders Korean/UTF-8 correctly.
-  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-  saveAs(blob, `ams_results_${timestamp()}.csv`);
+  saveAs(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" }), `ams_mapping_${ts()}.csv`);
 }
 
-export function exportXlsx(rows: AnalyzedRow[], t: T, includePrompt: boolean) {
-  const records = toRecords(rows, t, includePrompt);
-  const ws = XLSX.utils.json_to_sheet(records);
+export function exportXlsx(rows: MatchRow[], t: T) {
+  const ws = XLSX.utils.json_to_sheet(toRecords(rows, t));
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "AMS Results");
+  XLSX.utils.book_append_sheet(wb, ws, "Mapping");
   const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-  const blob = new Blob([out], { type: "application/octet-stream" });
-  saveAs(blob, `ams_results_${timestamp()}.xlsx`);
+  saveAs(new Blob([out], { type: "application/octet-stream" }), `ams_mapping_${ts()}.xlsx`);
 }

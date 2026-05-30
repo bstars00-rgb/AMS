@@ -1,113 +1,138 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { AnalyzedRow, ColumnMap, ParsedFile } from "./types";
-import { autoMap, applyMapping } from "./lib/columns";
-import { analyzeAll } from "./lib/analysis";
+import type { ClientRoom, MatchRow, MatchSettings } from "./types";
+import type { MasterData } from "./lib/loaders";
+import { runMatch, DEFAULT_SETTINGS } from "./lib/match";
+import { loadSampleMaster, loadSampleClient } from "./lib/sample";
 
-const STORAGE_KEY = "ams.work";
+const KEY = "ams.match.session";
 
-interface Persisted {
-  parsed: ParsedFile | null;
-  columnMap: ColumnMap;
-  rows: AnalyzedRow[];
+interface FileInfo {
   fileName: string;
+  count: number;
 }
 
-interface StoreCtx extends Persisted {
-  setParsedFile: (p: ParsedFile) => void;
-  setColumnMap: (m: ColumnMap) => void;
-  runAnalysis: () => number;
-  updateRow: (id: number, patch: Partial<AnalyzedRow>) => void;
-  attachPrompt: (id: number, prompt: string) => void;
+interface Persisted {
+  masterInfo: FileInfo | null;
+  clientInfo: FileInfo | null;
+  matches: MatchRow[];
+  settings: MatchSettings;
+}
+
+interface StoreCtx {
+  master: MasterData | null;
+  masterInfo: FileInfo | null;
+  clientRooms: ClientRoom[];
+  clientInfo: FileInfo | null;
+  matches: MatchRow[];
+  settings: MatchSettings;
+  hasMaster: boolean;
+  hasClient: boolean;
+  hasMatches: boolean;
+  setMaster: (m: MasterData, fileName: string) => void;
+  setClient: (rooms: ClientRoom[], fileName: string) => void;
+  runMatching: () => number;
+  updateRow: (id: string, patch: Partial<MatchRow>) => void;
+  setSettings: (s: MatchSettings) => void;
+  loadSample: () => void;
   clearAll: () => void;
-  hasResults: boolean;
 }
 
 const Ctx = createContext<StoreCtx | null>(null);
 
 function load(): Persisted {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(KEY);
     if (raw) return JSON.parse(raw) as Persisted;
   } catch {
     /* ignore */
   }
-  return { parsed: null, columnMap: {}, rows: [], fileName: "" };
+  return { masterInfo: null, clientInfo: null, matches: [], settings: DEFAULT_SETTINGS };
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const initial = useMemo(load, []);
-  const [parsed, setParsed] = useState<ParsedFile | null>(initial.parsed);
-  const [columnMap, setColumnMapState] = useState<ColumnMap>(initial.columnMap);
-  const [rows, setRows] = useState<AnalyzedRow[]>(initial.rows);
-  const [fileName, setFileName] = useState<string>(initial.fileName);
+  const [master, setMasterState] = useState<MasterData | null>(null);
+  const [masterInfo, setMasterInfo] = useState<FileInfo | null>(initial.masterInfo);
+  const [clientRooms, setClientRooms] = useState<ClientRoom[]>([]);
+  const [clientInfo, setClientInfo] = useState<FileInfo | null>(initial.clientInfo);
+  const [matches, setMatches] = useState<MatchRow[]>(initial.matches);
+  const [settings, setSettingsState] = useState<MatchSettings>(initial.settings);
 
-  // Persist the whole working state so a refresh restores the session.
+  // Persist the small/derived bits (not the big in-memory master inventory).
   useEffect(() => {
-    const data: Persisted = { parsed, columnMap, rows, fileName };
+    const data: Persisted = { masterInfo, clientInfo, matches, settings };
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(KEY, JSON.stringify(data));
     } catch {
       /* quota — ignore */
     }
-  }, [parsed, columnMap, rows, fileName]);
+  }, [masterInfo, clientInfo, matches, settings]);
 
-  const setParsedFile = (p: ParsedFile) => {
-    setParsed(p);
-    setFileName(p.fileName);
-    setColumnMapState(autoMap(p.headers));
+  const setMaster = (m: MasterData, fileName: string) => {
+    setMasterState(m);
+    setMasterInfo({ fileName, count: m.rooms.length });
+  };
+  const setClient = (rooms: ClientRoom[], fileName: string) => {
+    setClientRooms(rooms);
+    setClientInfo({ fileName, count: rooms.length });
   };
 
-  const setColumnMap = (m: ColumnMap) => setColumnMapState(m);
-
-  const runAnalysis = (): number => {
-    if (!parsed) return 0;
-    const raw = applyMapping(parsed, columnMap);
-    const analyzed = analyzeAll(raw);
-    setRows(analyzed);
-    return analyzed.length;
+  const runMatching = (): number => {
+    if (!master || clientRooms.length === 0) return 0;
+    const result = runMatch(clientRooms, master, settings);
+    setMatches(result);
+    return result.length;
   };
 
-  const updateRow = (id: number, patch: Partial<AnalyzedRow>) => {
-    setRows((prev) =>
+  const updateRow = (id: string, patch: Partial<MatchRow>) => {
+    setMatches((prev) =>
       prev.map((r) =>
         r.id === id
-          ? {
-              ...r,
-              ...patch,
-              edited: true,
-              reviewedDate: r.reviewedDate ?? new Date().toISOString().slice(0, 10),
-            }
+          ? { ...r, ...patch, reviewedDate: patch.reviewedDate ?? r.reviewedDate ?? new Date().toISOString().slice(0, 10) }
           : r
       )
     );
   };
 
-  const attachPrompt = (id: number, prompt: string) => {
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, aiPrompt: prompt } : r)));
+  const setSettings = (s: MatchSettings) => setSettingsState(s);
+
+  const loadSample = () => {
+    const m = loadSampleMaster();
+    const c = loadSampleClient();
+    setMaster(m, "sample_master.xlsx");
+    setClient(c, "sample_unmapped.xlsx");
+    setMatches(runMatch(c, m, settings));
   };
 
   const clearAll = () => {
-    setParsed(null);
-    setColumnMapState({});
-    setRows([]);
-    setFileName("");
-    localStorage.removeItem(STORAGE_KEY);
+    setMasterState(null);
+    setMasterInfo(null);
+    setClientRooms([]);
+    setClientInfo(null);
+    setMatches([]);
+    setSettingsState(DEFAULT_SETTINGS);
+    localStorage.removeItem(KEY);
   };
 
   return (
     <Ctx.Provider
       value={{
-        parsed,
-        columnMap,
-        rows,
-        fileName,
-        setParsedFile,
-        setColumnMap,
-        runAnalysis,
+        master,
+        masterInfo,
+        clientRooms,
+        clientInfo,
+        matches,
+        settings,
+        hasMaster: !!master,
+        hasClient: clientRooms.length > 0,
+        hasMatches: matches.length > 0,
+        setMaster,
+        setClient,
+        runMatching,
         updateRow,
-        attachPrompt,
+        setSettings,
+        loadSample,
         clearAll,
-        hasResults: rows.length > 0,
       }}
     >
       {children}
