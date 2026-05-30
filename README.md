@@ -144,27 +144,25 @@ git remote add origin https://github.com/bstars00-rgb/AMS.git
 git push -u origin main
 ```
 
-### Deploy with the `gh-pages` package (one command)
+### Option A — GitHub Actions (recommended, auto-deploy)
+
+This repo includes [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). Every push to `main` automatically builds and publishes the site — no local deploy command needed.
+
+One-time setup: in the repo go to **Settings → Pages → Build and deployment** and set **Source = GitHub Actions**. Then push to `main` (or re-run the workflow from the **Actions** tab). Watch progress under the **Actions** tab.
+
+### Option B — `gh-pages` package (manual, one command)
 
 ```bash
 npm run deploy
 ```
 
-This runs `npm run build` (via the `predeploy` script) and publishes `dist/` to a `gh-pages` branch.
+This runs `npm run build` (via `predeploy`) and publishes `dist/` to a `gh-pages` branch. One-time setup: **Settings → Pages → Source = Deploy from a branch → Branch `gh-pages` / `(root)`**.
 
-### Enable GitHub Pages (one-time)
+> Use **one** method, not both — the Pages **Source** setting can only point at one. Actions is recommended for a team; `gh-pages` is fine for a single person deploying from their machine.
 
-After the first `npm run deploy`, in the repository on GitHub go to:
-
-**Settings → Pages → Build and deployment**
-- **Source:** Deploy from a branch
-- **Branch:** `gh-pages`  ·  **Folder:** `/ (root)`
-
-The app will be live at:
+### Live URL
 
 **https://bstars00-rgb.github.io/AMS/**
-
-Re-deploy any time by running `npm run deploy` again.
 
 > Deploying to a **different** repository name? Change `base` in `vite.config.ts` from `/AMS/` to `/<your-repo>/` (or `/` for a user/org site or a custom domain).
 
