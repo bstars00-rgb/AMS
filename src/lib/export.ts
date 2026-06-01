@@ -65,6 +65,12 @@ function toRecords(rows: MatchRow[], t: T): Record<string, string>[] {
       [t("col.confidence")]: String((c ?? best)?.score ?? ""),
       [t("col.band")]: t(`band.${r.band}`),
       [t("col.status")]: t(`status.${r.status}`),
+      // P1-b calibration columns: top candidate score, whether the human kept the
+      // top candidate, and whether a bed conflict was present. Lets the team
+      // measure accept-rate by score and recalibrate thresholds from real data.
+      [t("col.topScore")]: String(best?.score ?? ""),
+      [t("col.chosenIsTop")]: r.chosenRoomCode ? (best?.roomCode === r.chosenRoomCode ? t("common.yes") : t("common.no")) : "",
+      [t("col.bedConflict")]: r.bedConflict ? t("common.yes") : t("common.no"),
       [t("col.remarks")]: r.remarks,
       [t("col.website")]: r.websiteUrl,
       [t("col.reviewedBy")]: r.reviewedBy,

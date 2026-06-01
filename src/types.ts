@@ -67,7 +67,9 @@ export interface Candidate {
   grade: string;
   view: string;
   bedSummary: string;
-  score: number; // 0-100
+  score: number; // 0-100 — a SIMILARITY score, not a probability of correctness
+  bedConflict: boolean; // both bed sets known and fully disjoint (e.g. King vs Twin)
+  bedVerified: boolean; // both bed sets known AND overlapping (positively matched)
   // sub-scores for transparency
   parts: { name: number; bed: number; type: number; grade: number; view: number };
 }
@@ -95,6 +97,8 @@ export interface MatchRow {
   candidates: Candidate[];
   bestScore: number;
   band: Band;
+  bedConflict: boolean; // top candidate has a bed-type conflict (gated out of Auto)
+  gated: boolean; // band was downgraded from Auto by the bed gate
   // human decision
   status: RowStatus;
   chosenRoomCode: string; // our Room Code the user confirmed ("" if none)

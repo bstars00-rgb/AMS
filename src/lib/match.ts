@@ -20,13 +20,18 @@ function catScore(a: string, b: string): number {
   return a === b ? 1 : 0;
 }
 
-function bedScore(a: string[], b: string[]): number {
-  if (a.length === 0 || b.length === 0) return 0.5;
+interface BedEval {
+  score: number; // 0..1
+  conflict: boolean; // both known, no overlap
+  verified: boolean; // both known, overlap >= 1
+}
+function evalBeds(a: string[], b: string[]): BedEval {
+  const bothKnown = a.length > 0 && b.length > 0;
+  if (!bothKnown) return { score: 0.5, conflict: false, verified: false }; // unknown -> neutral
   const setB = new Set(b);
   const common = a.filter((x) => setB.has(x)).length;
-  if (common === 0) return 0;
-  // proportion of the smaller set that overlaps
-  return common / Math.min(a.length, b.length);
+  if (common === 0) return { score: 0, conflict: true, verified: false };
+  return { score: common / Math.min(a.length, b.length), conflict: false, verified: true };
 }
 
 function bedSummary(room: MasterRoom): string {
@@ -36,7 +41,8 @@ function bedSummary(room: MasterRoom): string {
 
 export function scoreRoom(client: ClientRoom, master: MasterRoom): Candidate {
   const name = similarity(client.roomName, master.roomName);
-  const bed = bedScore(client.bedSet, master.bedSet);
+  const bedEval = evalBeds(client.bedSet, master.bedSet);
+  const bed = bedEval.score;
   const type = catScore(client.typ, master.typ);
   const grade = catScore(client.grd, master.grd);
   const view = catScore(client.vw, master.vw);
@@ -49,6 +55,8 @@ export function scoreRoom(client: ClientRoom, master: MasterRoom): Candidate {
     view: master.view,
     bedSummary: bedSummary(master),
     score,
+    bedConflict: bedEval.conflict,
+    bedVerified: bedEval.verified,
     parts: {
       name: Math.round(name * 100),
       bed: Math.round(bed * 100),
@@ -89,8 +97,14 @@ export function runMatch(
         .sort((a, b) => b.score - a.score)
         .slice(0, 5);
     }
-    const bestScore = candidates[0]?.score ?? 0;
-    const band: Band = hotel ? bandFor(bestScore, settings) : "NOMATCH";
+    const top = candidates[0];
+    const bestScore = top?.score ?? 0;
+    let band: Band = hotel ? bandFor(bestScore, settings) : "NOMATCH";
+    // P1 bed gate: only allow Auto when the bed type is POSITIVELY verified
+    // (known on both sides and overlapping). A bed conflict or an unknown/blank
+    // bed cannot auto-confirm — it must be human-reviewed.
+    const gated = band === "AUTO" && !top?.bedVerified;
+    if (gated) band = "REVIEW";
 
     return {
       id: c.basicRoomTypeId || `${c.clientHotelCode}-${c.roomName}`,
@@ -108,6 +122,8 @@ export function runMatch(
       candidates,
       bestScore,
       band,
+      bedConflict: !!top?.bedConflict,
+      gated,
       status: "PENDING",
       chosenRoomCode: "",
       remarks: "",

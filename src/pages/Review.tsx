@@ -16,21 +16,33 @@ export default function Review() {
   const [status, setStatus] = useState("");
   const [priority, setPriority] = useState("");
   const [unlinked, setUnlinked] = useState(false);
+  const [bedOnly, setBedOnly] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
 
   const priorities = useMemo(() => Array.from(new Set(matches.map((m) => m.priority).filter(Boolean))).sort(), [matches]);
+
+  const stats = useMemo(() => {
+    const s = { total: matches.length, AUTO: 0, REVIEW: 0, NOMATCH: 0, bed: 0, confirmed: 0 };
+    for (const r of matches) {
+      s[r.band] += 1;
+      if (r.bedConflict) s.bed += 1;
+      if (r.status === "CONFIRMED") s.confirmed += 1;
+    }
+    return s;
+  }, [matches]);
 
   const filtered = useMemo(() => matches.filter((r) => {
     if (band && r.band !== band) return false;
     if (status && r.status !== status) return false;
     if (priority && r.priority !== priority) return false;
     if (unlinked && r.hotelLinked) return false;
+    if (bedOnly && !r.bedConflict) return false;
     if (q) {
       const hay = `${r.clientHotelName} ${r.clientRoomName} ${r.masterHotelName} ${r.id}`.toLowerCase();
       if (!hay.includes(q.toLowerCase())) return false;
     }
     return true;
-  }), [matches, band, status, priority, unlinked, q]);
+  }), [matches, band, status, priority, unlinked, bedOnly, q]);
 
   if (!hasMatches) return <EmptyState message={t("review.empty")} />;
   const editingRow = editing ? matches.find((m) => m.id === editing) ?? null : null;
@@ -39,6 +51,17 @@ export default function Review() {
     <div>
       <PageHeader title={t("review.title")} subtitle={t("review.subtitle")}
         actions={<span className="text-sm text-gray-500">{t("review.showing", { n: filtered.length, total: matches.length })}</span>} />
+
+      {/* Calibration stats strip */}
+      <div className="mb-4 flex flex-wrap gap-2">
+        <Stat label={t("review.stat.total")} value={stats.total} />
+        <Stat label={t("band.AUTO")} value={stats.AUTO} color="text-green-600" />
+        <Stat label={t("band.REVIEW")} value={stats.REVIEW} color="text-amber-600" />
+        <Stat label={t("band.NOMATCH")} value={stats.NOMATCH} color="text-red-600" />
+        <Stat label={t("review.bedConflict")} value={stats.bed} color="text-red-600" />
+        <Stat label={t("review.stat.confirmed")} value={stats.confirmed} color="text-brand-700" />
+      </div>
+      <p className="mb-3 text-xs text-gray-400">ⓘ {t("review.scoreNote")}</p>
 
       <div className="card mb-4 flex flex-wrap items-center gap-2 p-3">
         <input className="input max-w-xs" placeholder={t("common.search")} value={q} onChange={(e) => setQ(e.target.value)} />
@@ -57,6 +80,10 @@ export default function Review() {
         <label className="flex items-center gap-1.5 text-xs text-gray-600">
           <input type="checkbox" checked={unlinked} onChange={(e) => setUnlinked(e.target.checked)} />
           {t("review.unlinkedOnly")}
+        </label>
+        <label className="flex items-center gap-1.5 text-xs text-gray-600">
+          <input type="checkbox" checked={bedOnly} onChange={(e) => setBedOnly(e.target.checked)} />
+          {t("review.bedConflictOnly")}
         </label>
       </div>
 
@@ -96,7 +123,12 @@ export default function Review() {
                     <td className="td text-xs">{r.clientBedType || "—"}</td>
                     <td className="td text-sm">{show ? show.roomName : <span className="text-gray-400">—</span>}</td>
                     <td className="td text-center">{show ? <ScorePill score={show.score} /> : "—"}</td>
-                    <td className="td text-center"><BandBadge band={r.band} /></td>
+                    <td className="td text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <BandBadge band={r.band} />
+                        {r.bedConflict && <span title={t("review.bedGateNote")} className="text-red-500">🛏✕</span>}
+                      </div>
+                    </td>
                     <td className="td text-center"><StatusBadge status={r.status} /></td>
                     <td className="td"><button className="btn-ghost px-2 py-1 text-xs" onClick={() => setEditing(r.id)}>{t("common.confirm")}</button></td>
                   </tr>
@@ -109,6 +141,15 @@ export default function Review() {
 
       {editingRow && <DetailModal row={editingRow} onClose={() => setEditing(null)}
         onUpdate={(patch) => updateRow(editingRow.id, patch)} />}
+    </div>
+  );
+}
+
+function Stat({ label, value, color }: { label: string; value: number; color?: string }) {
+  return (
+    <div className="card flex items-center gap-2 px-3 py-1.5">
+      <span className="text-xs text-gray-500">{label}</span>
+      <span className={`text-sm font-semibold tabular-nums ${color ?? "text-gray-800"}`}>{value}</span>
     </div>
   );
 }
@@ -144,9 +185,18 @@ function DetailModal({ row, onClose, onUpdate }: { row: MatchRow; onClose: () =>
           </div>
         </div>
 
+        {row.bedConflict && (
+          <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            ⚠ {t("review.bedGateNote")}
+          </div>
+        )}
+
         {/* Candidates */}
         <div className="mb-4">
-          <div className="label">{t("review.pick")}</div>
+          <div className="mb-1 flex items-center justify-between">
+            <span className="label mb-0">{t("review.pick")}</span>
+            <span className="text-[11px] text-gray-400">ⓘ {t("review.scoreNote")}</span>
+          </div>
           {row.candidates.length === 0 ? (
             <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-500">{t("review.noCandidates")}</p>
           ) : (
@@ -159,6 +209,7 @@ function DetailModal({ row, onClose, onUpdate }: { row: MatchRow; onClose: () =>
                     <div className="flex items-center gap-2">
                       <ScorePill score={c.score} />
                       <span className="truncate text-sm font-medium text-gray-800">{c.roomName}</span>
+                      {c.bedConflict && <span className="shrink-0 text-xs text-red-500" title={t("review.bedGateNote")}>🛏✕</span>}
                     </div>
                     <div className="mt-0.5 text-[11px] text-gray-400">
                       [{c.roomCode}] {c.type || "?"} · {c.grade || "?"} · {c.view || "?"} · {c.bedSummary || "?"}

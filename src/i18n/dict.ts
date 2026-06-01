@@ -111,13 +111,24 @@ export const en: Dict = {
   "col.expedia": "Expedia Code",
   "col.ourRoomCode": "Our Room Code",
   "col.ourRoom": "Our Room",
-  "col.confidence": "Confidence",
+  "col.confidence": "Match score",
   "col.band": "Band",
   "col.status": "Status",
   "col.remarks": "Remarks",
   "col.website": "Website URL",
   "col.reviewedBy": "Reviewed By",
   "col.reviewedDate": "Reviewed Date",
+  "col.topScore": "Top Score",
+  "col.chosenIsTop": "Chosen = Top",
+  "col.bedConflict": "Bed Conflict",
+
+  "review.bedConflict": "Bed conflict",
+  "review.bedConflictOnly": "Bed conflict only",
+  "review.bedGateNote": "Bed type not verified (differs or unknown) — cannot Auto-confirm. Check the bed type before confirming.",
+  "review.scoreNote": "Score = similarity, not the probability of being correct. Check the sub-scores.",
+  "review.gated": "gated by bed",
+  "review.stat.total": "Total",
+  "review.stat.confirmed": "Confirmed",
 };
 
 export const ko: Dict = {
@@ -230,13 +241,24 @@ export const ko: Dict = {
   "col.expedia": "Expedia 코드",
   "col.ourRoomCode": "우리 룸코드",
   "col.ourRoom": "우리 룸",
-  "col.confidence": "확신도",
+  "col.confidence": "유사도 점수",
   "col.band": "밴드",
   "col.status": "상태",
   "col.remarks": "비고",
   "col.website": "웹사이트 URL",
   "col.reviewedBy": "검토자",
   "col.reviewedDate": "검토일",
+  "col.topScore": "최고 점수",
+  "col.chosenIsTop": "선택=최고",
+  "col.bedConflict": "베드 충돌",
+
+  "review.bedConflict": "베드 충돌",
+  "review.bedConflictOnly": "베드 충돌만",
+  "review.bedGateNote": "베드타입이 검증되지 않았습니다(불일치 또는 미상) — 자동확정 불가. 확정 전 베드타입을 직접 확인하세요.",
+  "review.scoreNote": "점수 = 유사도이며 '정답 확률'이 아닙니다. 세부 점수로 근거를 확인하세요.",
+  "review.gated": "베드 게이트",
+  "review.stat.total": "전체",
+  "review.stat.confirmed": "확정",
 };
 
 export const dicts: Record<Lang, Dict> = { en, ko };
