@@ -1,0 +1,16 @@
+{
+  "name": "ams-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AMS local automation agent for Trip.com Connect — reads the room-mapping page, scores candidates with the AMS algorithm, and highlights the recommended match. The final 'Mapping' click stays with the human.",
+  "scripts": {
+    "login": "node src/login.mjs",
+    "assist": "node src/assist.mjs",
+    "postinstall": "echo \"\\nNext: npx playwright install chromium\\n\""
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "playwright": "^1.49.0"
+  }
+}
