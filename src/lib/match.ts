@@ -9,7 +9,12 @@ import type {
 import type { MasterData } from "./loaders";
 import { similarity, bedLabel, norm } from "./normalize";
 
-export const DEFAULT_SETTINGS: MatchSettings = { autoThreshold: 90, reviewThreshold: 65 };
+export const DEFAULT_SETTINGS: MatchSettings = {
+  autoThreshold: 90,
+  reviewThreshold: 65,
+  clientChannel: "",
+  excludeCircular: true,
+};
 
 // Feature weights (sum = 1). Bed type and room name carry the most signal.
 const W = { name: 0.3, bed: 0.25, type: 0.2, grade: 0.15, view: 0.1 };
@@ -57,6 +62,8 @@ export function scoreRoom(client: ClientRoom, master: MasterRoom): Candidate {
     score,
     bedConflict: bedEval.conflict,
     bedVerified: bedEval.verified,
+    source: master.source,
+    circular: false, // set by runMatch once the client channel is known
     parts: {
       name: Math.round(name * 100),
       bed: Math.round(bed * 100),
@@ -82,20 +89,37 @@ function linkHotel(client: ClientRoom, master: MasterData) {
   return { hotel: null, by: null };
 }
 
+// A candidate is "circular" when we sourced it FROM the very party we're now
+// mapping for (e.g. an Agoda-sourced room being mapped back to the Agoda client).
+function isCircular(source: string, channel: string): boolean {
+  if (!source || !channel) return false;
+  const s = norm(source);
+  const ch = norm(channel);
+  return s === ch || s.includes(ch) || ch.includes(s);
+}
+
 export function runMatch(
   clientRooms: ClientRoom[],
   master: MasterData,
   settings: MatchSettings = DEFAULT_SETTINGS
 ): MatchRow[] {
+  const channel = settings.clientChannel ?? "";
   return clientRooms.map((c) => {
     const { hotel, by } = linkHotel(c, master);
     let candidates: Candidate[] = [];
+    let blockedCandidates: Candidate[] = [];
     if (hotel) {
       const ourRooms = master.roomsByHotelCode.get(hotel.hotelCode) ?? [];
-      candidates = ourRooms
-        .map((r) => scoreRoom(c, r))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 5);
+      const scored = ourRooms
+        .map((r) => {
+          const cand = scoreRoom(c, r);
+          cand.circular = isCircular(cand.source, channel);
+          return cand;
+        })
+        .sort((a, b) => b.score - a.score);
+      const allowed = settings.excludeCircular ? scored.filter((s) => !s.circular) : scored;
+      candidates = allowed.slice(0, 5);
+      blockedCandidates = settings.excludeCircular ? scored.filter((s) => s.circular).slice(0, 3) : [];
     }
     const top = candidates[0];
     const bestScore = top?.score ?? 0;
@@ -120,10 +144,12 @@ export function runMatch(
       masterHotelName: hotel?.hotelName ?? "",
       expediaCode: hotel?.expediaCode ?? "",
       candidates,
+      blockedCandidates,
       bestScore,
       band,
       bedConflict: !!top?.bedConflict,
       gated,
+      circularBlocked: blockedCandidates.length > 0,
       status: "PENDING",
       chosenRoomCode: "",
       remarks: "",

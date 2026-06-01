@@ -71,6 +71,7 @@ function toRecords(rows: MatchRow[], t: T): Record<string, string>[] {
       [t("col.topScore")]: String(best?.score ?? ""),
       [t("col.chosenIsTop")]: r.chosenRoomCode ? (best?.roomCode === r.chosenRoomCode ? t("common.yes") : t("common.no")) : "",
       [t("col.bedConflict")]: r.bedConflict ? t("common.yes") : t("common.no"),
+      [t("col.circular")]: r.circularBlocked ? t("common.yes") : t("common.no"),
       [t("col.remarks")]: r.remarks,
       [t("col.website")]: r.websiteUrl,
       [t("col.reviewedBy")]: r.reviewedBy,

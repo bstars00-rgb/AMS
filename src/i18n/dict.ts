@@ -46,6 +46,9 @@ export const en: Dict = {
   "load.settings": "Match thresholds",
   "load.autoTh": "Auto-confirm ≥",
   "load.reviewTh": "Review ≥ (else No match)",
+  "load.channel": "Client / channel",
+  "load.channelHint": "Who you are mapping for (e.g. \"Agoda\"). Used to block circular mapping.",
+  "load.excludeCircular": "Exclude rooms we sourced from this client (circular)",
 
   "review.title": "Review Matches",
   "review.subtitle": "Confirm the best match per client room. Nothing is auto-finalized — you decide. Ambiguous rooms go to website check.",
@@ -129,6 +132,11 @@ export const en: Dict = {
   "review.gated": "gated by bed",
   "review.stat.total": "Total",
   "review.stat.confirmed": "Confirmed",
+  "review.circular": "circular",
+  "review.circularBlocked": "Circular blocked",
+  "review.blockedTitle": "Excluded as circular (sourced from this client)",
+  "review.source": "Source",
+  "col.circular": "Circular Blocked",
 };
 
 export const ko: Dict = {
@@ -176,6 +184,9 @@ export const ko: Dict = {
   "load.settings": "매칭 임계값",
   "load.autoTh": "자동확정 ≥",
   "load.reviewTh": "검토 ≥ (미만은 매칭없음)",
+  "load.channel": "고객사 / 채널",
+  "load.channelHint": "누구에게 매핑해 주는지 (예: \"Agoda\"). 순환 매핑 차단에 사용됩니다.",
+  "load.excludeCircular": "이 고객사에서 받은(순환) 룸 후보 제외",
 
   "review.title": "매칭 검토",
   "review.subtitle": "룸별 최적 매칭을 확정하세요. 자동 확정은 없고 담당자가 결정합니다. 애매한 건은 웹사이트 확인으로.",
@@ -259,6 +270,11 @@ export const ko: Dict = {
   "review.gated": "베드 게이트",
   "review.stat.total": "전체",
   "review.stat.confirmed": "확정",
+  "review.circular": "순환",
+  "review.circularBlocked": "순환 차단",
+  "review.blockedTitle": "순환으로 제외됨 (이 고객사에서 받은 공급분)",
+  "review.source": "출처",
+  "col.circular": "순환 차단",
 };
 
 export const dicts: Record<Lang, Dict> = { en, ko };

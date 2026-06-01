@@ -42,7 +42,12 @@ const Ctx = createContext<StoreCtx | null>(null);
 function load(): Persisted {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw) as Persisted;
+    if (raw) {
+      const parsed = JSON.parse(raw) as Persisted;
+      // Merge settings with defaults so older sessions gain new fields.
+      parsed.settings = { ...DEFAULT_SETTINGS, ...parsed.settings };
+      return parsed;
+    }
   } catch {
     /* ignore */
   }

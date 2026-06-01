@@ -76,6 +76,7 @@ export function loadMaster(wb: XLSX.WorkBook): MasterData {
   const gh = accessor(overall);
   const gr = accessor(roomSheet);
 
+  const SOURCE_ALIASES = ["Source", "Supplier", "Provider", "Channel", "Sourcing", "공급원", "공급사"];
   const hotels: MasterHotel[] = overall.map((r) => ({
     hotelCode: gh(r, ["Hotel Code"]),
     hotelName: gh(r, ["Hotel Name"]),
@@ -88,7 +89,9 @@ export function loadMaster(wb: XLSX.WorkBook): MasterData {
     address: gh(r, ["Address (EN)", "Address"]),
     lat: gh(r, ["Latitude"]),
     lng: gh(r, ["Longitude"]),
+    source: gh(r, SOURCE_ALIASES),
   }));
+  const hotelSourceByCode = new Map(hotels.map((h) => [h.hotelCode, h.source]));
 
   // Group room rows by Room Code (collect bed groups).
   const byRoomCode = new Map<string, Row[]>();
@@ -108,8 +111,10 @@ export function loadMaster(wb: XLSX.WorkBook): MasterData {
     const view = gr(head, ["Room View"]);
     const bedRaw = group.map((g) => gr(g, ["Bed Type"])).filter(Boolean);
     const bedSet = Array.from(new Set(bedRaw.flatMap((b) => normalizeBeds(b))));
+    const hotelCode = gr(head, ["Hotel Code"]);
+    const roomSource = gr(head, SOURCE_ALIASES);
     rooms.push({
-      hotelCode: gr(head, ["Hotel Code"]),
+      hotelCode,
       hotelName: gr(head, ["Hotel Name"]),
       roomCode,
       legacyRoomCode: gr(head, ["Legacy Room Code"]),
@@ -123,6 +128,7 @@ export function loadMaster(wb: XLSX.WorkBook): MasterData {
       minPax: gr(head, ["Min"]),
       maxPax: gr(head, ["Max"]),
       roomSize: gr(head, ["Room Size"]),
+      source: roomSource || hotelSourceByCode.get(hotelCode) || "",
       grd: parseGrade(`${grade} ${roomName}`),
       typ: canonicalType(type) || parseType(roomName),
       vw: (parseView(view) || parseView(roomName)),

@@ -90,10 +90,21 @@ export default function Load() {
               value={settings.reviewThreshold}
               onChange={(e) => setSettings({ ...settings, reviewThreshold: Number(e.target.value) })} />
           </label>
+          <label className="text-xs text-gray-600">
+            <span className="mb-1 block">{t("load.channel")}</span>
+            <input className="input w-40" placeholder="Agoda" title={t("load.channelHint")}
+              value={settings.clientChannel}
+              onChange={(e) => setSettings({ ...settings, clientChannel: e.target.value })} />
+          </label>
           <button className="btn-primary ml-auto" disabled={!hasMaster || !hasClient || busy} onClick={run}>
             {t("load.run")}
           </button>
         </div>
+        <label className="mt-3 flex items-center gap-2 text-xs text-gray-600">
+          <input type="checkbox" checked={settings.excludeCircular}
+            onChange={(e) => setSettings({ ...settings, excludeCircular: e.target.checked })} />
+          {t("load.excludeCircular")}
+        </label>
         {(!hasMaster || !hasClient) && <p className="mt-3 text-xs text-gray-400">{t("load.needBoth")}</p>}
       </div>
     </div>

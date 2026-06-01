@@ -12,6 +12,7 @@ export interface MasterHotel {
   address: string;
   lat: string;
   lng: string;
+  source: string; // provenance: where we sourced it (direct vs a 3rd-party supplier)
 }
 
 export interface MasterRoom {
@@ -29,6 +30,7 @@ export interface MasterRoom {
   minPax: string;
   maxPax: string;
   roomSize: string;
+  source: string; // provenance (room-level, falls back to hotel source)
   // parsed/enriched
   grd: string; // canonical grade
   typ: string; // canonical type
@@ -70,6 +72,8 @@ export interface Candidate {
   score: number; // 0-100 — a SIMILARITY score, not a probability of correctness
   bedConflict: boolean; // both bed sets known and fully disjoint (e.g. King vs Twin)
   bedVerified: boolean; // both bed sets known AND overlapping (positively matched)
+  source: string; // master room provenance
+  circular: boolean; // candidate sourced from the same party we're mapping for
   // sub-scores for transparency
   parts: { name: number; bed: number; type: number; grade: number; view: number };
 }
@@ -95,10 +99,12 @@ export interface MatchRow {
   expediaCode: string;
   // room match
   candidates: Candidate[];
+  blockedCandidates: Candidate[]; // circular candidates excluded from matching
   bestScore: number;
   band: Band;
   bedConflict: boolean; // top candidate has a bed-type conflict (gated out of Auto)
   gated: boolean; // band was downgraded from Auto by the bed gate
+  circularBlocked: boolean; // at least one candidate was excluded as circular
   // human decision
   status: RowStatus;
   chosenRoomCode: string; // our Room Code the user confirmed ("" if none)
@@ -112,4 +118,6 @@ export interface MatchRow {
 export interface MatchSettings {
   autoThreshold: number; // >= => AUTO band
   reviewThreshold: number; // >= => REVIEW band, else NOMATCH
+  clientChannel: string; // who we are mapping for (e.g. "Agoda") — for circular block
+  excludeCircular: boolean; // drop candidates we sourced FROM that same party
 }

@@ -127,6 +127,7 @@ export default function Review() {
                       <div className="flex items-center justify-center gap-1">
                         <BandBadge band={r.band} />
                         {r.bedConflict && <span title={t("review.bedGateNote")} className="text-red-500">🛏✕</span>}
+                        {r.circularBlocked && <span title={t("review.blockedTitle")} className="text-amber-600">🔁</span>}
                       </div>
                     </td>
                     <td className="td text-center"><StatusBadge status={r.status} /></td>
@@ -221,6 +222,21 @@ function DetailModal({ row, onClose, onUpdate }: { row: MatchRow; onClose: () =>
             </div>
           )}
         </div>
+
+        {row.blockedCandidates && row.blockedCandidates.length > 0 && (
+          <div className="mb-4">
+            <div className="label text-amber-700">{t("review.blockedTitle")}</div>
+            <div className="space-y-1">
+              {row.blockedCandidates.map((c) => (
+                <div key={c.roomCode} className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50/50 px-3 py-1.5 opacity-70">
+                  <ScorePill score={c.score} />
+                  <span className="truncate text-sm text-gray-700 line-through">{c.roomName}</span>
+                  <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">{t("review.circular")} · {c.source}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Reviewer / remarks / website */}
         <div className="mb-4 grid grid-cols-2 gap-3">
