@@ -147,6 +147,13 @@ export const en: Dict = {
   "review.w.type": "Type",
   "review.w.grade": "Grade",
   "review.w.view": "View",
+  "review.webSearch": "Web search (verify)",
+  "search.official": "Official site",
+  "search.google": "Google",
+  "search.agoda": "Agoda",
+  "search.trip": "Trip.com / Ctrip",
+  "search.booking": "Booking",
+  "search.maps": "Maps (address)",
 };
 
 export const ko: Dict = {
@@ -295,6 +302,13 @@ export const ko: Dict = {
   "review.w.type": "타입",
   "review.w.grade": "등급",
   "review.w.view": "뷰",
+  "review.webSearch": "웹 검색 (확인)",
+  "search.official": "공식 사이트",
+  "search.google": "Google",
+  "search.agoda": "Agoda",
+  "search.trip": "Trip.com / Ctrip",
+  "search.booking": "Booking",
+  "search.maps": "지도(주소)",
 };
 
 export const dicts: Record<Lang, Dict> = { en, ko };

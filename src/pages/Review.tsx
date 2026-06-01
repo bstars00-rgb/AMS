@@ -4,6 +4,7 @@ import { useStore } from "../store";
 import { PageHeader, BandBadge, StatusBadge, ScorePill, EmptyState } from "../components/ui";
 import { generatePrompt, PROMPT_TYPES, type PromptType } from "../lib/prompts";
 import { DEFAULT_WEIGHTS } from "../lib/match";
+import { searchLinks } from "../lib/search";
 import type { MatchRow, Band, RowStatus, MatchSettings, RoomWeights } from "../types";
 
 const BANDS: Band[] = ["AUTO", "REVIEW", "NOMATCH"];
@@ -302,6 +303,18 @@ function DetailModal({ row, onClose, onUpdate }: { row: MatchRow; onClose: () =>
           <div><div className="label">{t("review.reviewedBy")}</div><input className="input" placeholder={t("review.yourName")} value={reviewer} onChange={(e) => setReviewer(e.target.value)} /></div>
           <div><div className="label">{t("review.website")}</div><input className="input" placeholder="https://" value={website} onChange={(e) => setWebsite(e.target.value)} /></div>
           <div className="col-span-2"><div className="label">{t("review.remarks")}</div><textarea className="input min-h-[56px]" value={remarks} onChange={(e) => setRemarks(e.target.value)} /></div>
+        </div>
+
+        {/* Web search (one-click verify) */}
+        <div className="mb-4">
+          <div className="label">{t("review.webSearch")}</div>
+          <div className="flex flex-wrap gap-2">
+            {searchLinks(row.masterHotelName || row.clientHotelName, row.city, row.clientRoomName).map((l) => (
+              <a key={l.key} href={l.url} target="_blank" rel="noopener noreferrer" className="btn-ghost px-2.5 py-1 text-xs">
+                🔎 {t(`search.${l.key}`)}
+              </a>
+            ))}
+          </div>
         </div>
 
         {/* AI prompt */}
