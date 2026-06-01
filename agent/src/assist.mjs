@@ -61,9 +61,12 @@ for (const rows of tables) {
 
 if (!masterTbl) {
   console.error("\n⚠ Could not find the 'Recommended Master Rooms' table on this page.");
-  console.error("  The page may use a non-table layout. Share the page HTML and I'll adjust the reader.");
-  await page.screenshot({ path: "screenshots/page.png", fullPage: true }).catch(() => {});
-  await ask("\n  Saved a screenshot. Press ENTER to exit… ");
+  console.error("  The page may use a non-table layout. Share the saved files and I'll adjust the reader.");
+  fs.mkdirSync("reports", { recursive: true });
+  await page.screenshot({ path: "reports/page.png", fullPage: true }).catch(() => {});
+  await fs.promises.writeFile("reports/page.html", await page.content()).catch(() => {});
+  console.error("  Saved: reports/page.png  and  reports/page.html");
+  await ask("\n  Press ENTER to exit… ");
   await browser.close();
   process.exit(0);
 }
