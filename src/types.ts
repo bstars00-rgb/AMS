@@ -115,9 +115,18 @@ export interface MatchRow {
   websiteUrl: string;
 }
 
+export interface RoomWeights {
+  name: number;
+  bed: number;
+  type: number;
+  grade: number;
+  view: number;
+}
+
 export interface MatchSettings {
   autoThreshold: number; // >= => AUTO band
   reviewThreshold: number; // >= => REVIEW band, else NOMATCH
   clientChannel: string; // who we are mapping for (e.g. "Agoda") — for circular block
   excludeCircular: boolean; // drop candidates we sourced FROM that same party
+  weights: RoomWeights; // tunable scoring weights (relative; normalized at use)
 }

@@ -3,14 +3,15 @@ import { useI18n } from "../i18n";
 import { useStore } from "../store";
 import { PageHeader, BandBadge, StatusBadge, ScorePill, EmptyState } from "../components/ui";
 import { generatePrompt, PROMPT_TYPES, type PromptType } from "../lib/prompts";
-import type { MatchRow, Band, RowStatus } from "../types";
+import { DEFAULT_WEIGHTS } from "../lib/match";
+import type { MatchRow, Band, RowStatus, MatchSettings, RoomWeights } from "../types";
 
 const BANDS: Band[] = ["AUTO", "REVIEW", "NOMATCH"];
 const STATUSES: RowStatus[] = ["PENDING", "CONFIRMED", "NEED_CREATION", "WEBSITE_CHECK"];
 
 export default function Review() {
   const { t } = useI18n();
-  const { matches, hasMatches, updateRow } = useStore();
+  const { matches, hasMatches, updateRow, settings, applyTuning } = useStore();
   const [q, setQ] = useState("");
   const [band, setBand] = useState("");
   const [status, setStatus] = useState("");
@@ -62,6 +63,8 @@ export default function Review() {
         <Stat label={t("review.stat.confirmed")} value={stats.confirmed} color="text-brand-700" />
       </div>
       <p className="mb-3 text-xs text-gray-400">ⓘ {t("review.scoreNote")}</p>
+
+      <TuningPanel settings={settings} onChange={applyTuning} />
 
       <div className="card mb-4 flex flex-wrap items-center gap-2 p-3">
         <input className="input max-w-xs" placeholder={t("common.search")} value={q} onChange={(e) => setQ(e.target.value)} />
@@ -142,6 +145,62 @@ export default function Review() {
 
       {editingRow && <DetailModal row={editingRow} onClose={() => setEditing(null)}
         onUpdate={(patch) => updateRow(editingRow.id, patch)} />}
+    </div>
+  );
+}
+
+function TuningPanel({ settings, onChange }: { settings: MatchSettings; onChange: (s: MatchSettings) => void }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const w = settings.weights;
+  const keys: (keyof RoomWeights)[] = ["name", "bed", "type", "grade", "view"];
+  const total = keys.reduce((s, k) => s + w[k], 0) || 1;
+  const setW = (k: keyof RoomWeights, v: number) => onChange({ ...settings, weights: { ...w, [k]: v } });
+  const reset = () => onChange({ ...settings, weights: { ...DEFAULT_WEIGHTS }, autoThreshold: 90, reviewThreshold: 65 });
+
+  return (
+    <div className="card mb-4 p-3">
+      <button className="flex w-full items-center justify-between text-sm font-semibold text-gray-800" onClick={() => setOpen(!open)}>
+        <span>⚙ {t("review.tuning")}</span>
+        <span className="text-gray-400">{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div className="mt-3">
+          <p className="mb-3 text-xs text-gray-500">{t("review.tuningHint")}</p>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div>
+              <div className="label">{t("review.weights")}</div>
+              <div className="space-y-2">
+                {keys.map((k) => (
+                  <div key={k} className="flex items-center gap-3">
+                    <span className="w-12 shrink-0 text-xs text-gray-600">{t(`review.w.${k}`)}</span>
+                    <input type="range" min={0} max={100} value={w[k]} onChange={(e) => setW(k, Number(e.target.value))} className="flex-1 accent-brand-600" />
+                    <span className="w-10 text-right text-xs tabular-nums text-gray-500">{w[k]}</span>
+                    <span className="w-12 text-right text-[11px] tabular-nums text-brand-700">{Math.round((w[k] / total) * 100)}%</span>
+                  </div>
+                ))}
+                <div className="text-right text-[10px] text-gray-400">{t("review.normalized")}</div>
+              </div>
+            </div>
+            <div>
+              <div className="label">{t("review.thresholds")}</div>
+              <div className="flex flex-wrap items-end gap-4">
+                <label className="text-xs text-gray-600">
+                  <span className="mb-1 block">{t("load.autoTh")}</span>
+                  <input type="number" min={0} max={100} className="input w-24" value={settings.autoThreshold}
+                    onChange={(e) => onChange({ ...settings, autoThreshold: Number(e.target.value) })} />
+                </label>
+                <label className="text-xs text-gray-600">
+                  <span className="mb-1 block">{t("load.reviewTh")}</span>
+                  <input type="number" min={0} max={100} className="input w-24" value={settings.reviewThreshold}
+                    onChange={(e) => onChange({ ...settings, reviewThreshold: Number(e.target.value) })} />
+                </label>
+                <button className="btn-ghost" onClick={reset}>{t("common.reset")}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

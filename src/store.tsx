@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { ClientRoom, MatchRow, MatchSettings } from "./types";
 import type { MasterData } from "./lib/loaders";
-import { runMatch, DEFAULT_SETTINGS } from "./lib/match";
+import { runMatch, rescore, DEFAULT_SETTINGS } from "./lib/match";
 import { loadSampleMaster, loadSampleClient } from "./lib/sample";
 
 const KEY = "ams.match.session";
@@ -33,6 +33,7 @@ interface StoreCtx {
   runMatching: () => number;
   updateRow: (id: string, patch: Partial<MatchRow>) => void;
   setSettings: (s: MatchSettings) => void;
+  applyTuning: (s: MatchSettings) => void;
   loadSample: () => void;
   clearAll: () => void;
 }
@@ -101,6 +102,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const setSettings = (s: MatchSettings) => setSettingsState(s);
 
+  // Live tuning: update settings and instantly re-score existing matches
+  // from their stored sub-scores (no re-matching).
+  const applyTuning = (s: MatchSettings) => {
+    setSettingsState(s);
+    setMatches((prev) => (prev.length ? rescore(prev, s) : prev));
+  };
+
   const loadSample = () => {
     const m = loadSampleMaster();
     const c = loadSampleClient();
@@ -136,6 +144,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         runMatching,
         updateRow,
         setSettings,
+        applyTuning,
         loadSample,
         clearAll,
       }}

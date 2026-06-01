@@ -137,6 +137,16 @@ export const en: Dict = {
   "review.blockedTitle": "Excluded as circular (sourced from this client)",
   "review.source": "Source",
   "col.circular": "Circular Blocked",
+  "review.tuning": "Algorithm tuning (experiment)",
+  "review.tuningHint": "Drag the weights or change thresholds — bands recalculate live on the data below.",
+  "review.weights": "Score weights",
+  "review.thresholds": "Thresholds",
+  "review.normalized": "effective",
+  "review.w.name": "Name",
+  "review.w.bed": "Bed",
+  "review.w.type": "Type",
+  "review.w.grade": "Grade",
+  "review.w.view": "View",
 };
 
 export const ko: Dict = {
@@ -275,6 +285,16 @@ export const ko: Dict = {
   "review.blockedTitle": "순환으로 제외됨 (이 고객사에서 받은 공급분)",
   "review.source": "출처",
   "col.circular": "순환 차단",
+  "review.tuning": "알고리즘 조정 (실험)",
+  "review.tuningHint": "가중치를 드래그하거나 임계값을 바꾸면 아래 데이터의 밴드가 실시간 재계산됩니다.",
+  "review.weights": "점수 가중치",
+  "review.thresholds": "임계값",
+  "review.normalized": "실효",
+  "review.w.name": "이름",
+  "review.w.bed": "베드",
+  "review.w.type": "타입",
+  "review.w.grade": "등급",
+  "review.w.view": "뷰",
 };
 
 export const dicts: Record<Lang, Dict> = { en, ko };

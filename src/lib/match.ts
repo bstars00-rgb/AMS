@@ -4,20 +4,31 @@ import type {
   Candidate,
   MatchRow,
   MatchSettings,
+  RoomWeights,
   Band,
 } from "../types";
 import type { MasterData } from "./loaders";
 import { similarity, bedLabel, norm } from "./normalize";
+
+// Default feature weights (relative; normalized at use). Bed type and room
+// name carry the most signal. Exposed in the UI for live experimentation.
+export const DEFAULT_WEIGHTS: RoomWeights = { name: 30, bed: 25, type: 20, grade: 15, view: 10 };
 
 export const DEFAULT_SETTINGS: MatchSettings = {
   autoThreshold: 90,
   reviewThreshold: 65,
   clientChannel: "",
   excludeCircular: true,
+  weights: { ...DEFAULT_WEIGHTS },
 };
 
-// Feature weights (sum = 1). Bed type and room name carry the most signal.
-const W = { name: 0.3, bed: 0.25, type: 0.2, grade: 0.15, view: 0.1 };
+// Weighted average of the 0-100 sub-scores. Weights are normalized so they
+// need not sum to any particular total.
+export function weightedScore(parts: Candidate["parts"], w: RoomWeights): number {
+  const total = w.name + w.bed + w.type + w.grade + w.view || 1;
+  const s = w.name * parts.name + w.bed * parts.bed + w.type * parts.type + w.grade * parts.grade + w.view * parts.view;
+  return Math.round(s / total);
+}
 
 function catScore(a: string, b: string): number {
   if (!a && !b) return 0.5;
@@ -44,14 +55,20 @@ function bedSummary(room: MasterRoom): string {
   return room.bedTypes.join(" / ");
 }
 
-export function scoreRoom(client: ClientRoom, master: MasterRoom): Candidate {
+export function scoreRoom(client: ClientRoom, master: MasterRoom, weights: RoomWeights = DEFAULT_WEIGHTS): Candidate {
   const name = similarity(client.roomName, master.roomName);
   const bedEval = evalBeds(client.bedSet, master.bedSet);
   const bed = bedEval.score;
   const type = catScore(client.typ, master.typ);
   const grade = catScore(client.grd, master.grd);
   const view = catScore(client.vw, master.vw);
-  const score = Math.round(100 * (W.name * name + W.bed * bed + W.type * type + W.grade * grade + W.view * view));
+  const parts = {
+    name: Math.round(name * 100),
+    bed: Math.round(bed * 100),
+    type: Math.round(type * 100),
+    grade: Math.round(grade * 100),
+    view: Math.round(view * 100),
+  };
   return {
     roomCode: master.roomCode,
     roomName: master.roomName,
@@ -59,18 +76,12 @@ export function scoreRoom(client: ClientRoom, master: MasterRoom): Candidate {
     grade: master.grade,
     view: master.view,
     bedSummary: bedSummary(master),
-    score,
+    score: weightedScore(parts, weights),
     bedConflict: bedEval.conflict,
     bedVerified: bedEval.verified,
     source: master.source,
     circular: false, // set by runMatch once the client channel is known
-    parts: {
-      name: Math.round(name * 100),
-      bed: Math.round(bed * 100),
-      type: Math.round(type * 100),
-      grade: Math.round(grade * 100),
-      view: Math.round(view * 100),
-    },
+    parts,
   };
 }
 
@@ -112,7 +123,7 @@ export function runMatch(
       const ourRooms = master.roomsByHotelCode.get(hotel.hotelCode) ?? [];
       const scored = ourRooms
         .map((r) => {
-          const cand = scoreRoom(c, r);
+          const cand = scoreRoom(c, r, settings.weights);
           cand.circular = isCircular(cand.source, channel);
           return cand;
         })
@@ -158,5 +169,22 @@ export function runMatch(
       aiPrompt: "",
       websiteUrl: "",
     };
+  });
+}
+
+// Re-score existing matches from their stored sub-scores using new weights/
+// thresholds — no re-matching needed, so weight tuning updates instantly.
+// User decisions (status/chosenRoomCode/remarks…) are preserved.
+export function rescore(rows: MatchRow[], settings: MatchSettings): MatchRow[] {
+  const reweigh = (c: Candidate): Candidate => ({ ...c, score: weightedScore(c.parts, settings.weights) });
+  return rows.map((r) => {
+    const candidates = r.candidates.map(reweigh).sort((a, b) => b.score - a.score);
+    const blockedCandidates = (r.blockedCandidates ?? []).map(reweigh).sort((a, b) => b.score - a.score);
+    const top = candidates[0];
+    const bestScore = top?.score ?? 0;
+    let band: Band = r.hotelLinked ? bandFor(bestScore, settings) : "NOMATCH";
+    const gated = band === "AUTO" && !top?.bedVerified;
+    if (gated) band = "REVIEW";
+    return { ...r, candidates, blockedCandidates, bestScore, band, gated, bedConflict: !!top?.bedConflict };
   });
 }
