@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AMS Desktop — 매핑 콘솔 (프리뷰)</title>
+<style>
+  :root { --b:#2f55d4; --b2:#243f99; --line:#e5e7eb; --bg:#f4f6fb; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Malgun Gothic",system-ui,sans-serif; background:var(--bg); color:#0f172a; }
+  .demo { background:#fff7ed; border-bottom:1px solid #fed7aa; color:#9a3412; font-size:13px; padding:9px 22px; text-align:center; }
+  header { background:#fff; border-bottom:1px solid var(--line); padding:14px 22px; display:flex; align-items:center; gap:12px; }
+  header .logo { width:34px;height:34px;border-radius:8px;background:var(--b);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:13px; }
+  header h1 { font-size:16px; margin:0; }
+  header .sub { font-size:12px; color:#64748b; }
+  .wrap { max-width:1050px; margin:18px auto; padding:0 18px; display:grid; gap:16px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .card h2 { margin:0 0 4px; font-size:14px; }
+  .card p.hint { margin:0 0 12px; font-size:12px; color:#64748b; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  input,select { border:1px solid #cbd5e1; border-radius:8px; padding:8px 10px; font-size:13px; outline:none; }
+  input:focus,select:focus { border-color:var(--b); }
+  button { background:var(--b); color:#fff; border:0; border-radius:8px; padding:9px 14px; font-size:13px; font-weight:600; cursor:pointer; }
+  button:hover { background:var(--b2); }
+  button.ghost { background:#fff; color:#334155; border:1px solid #cbd5e1; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th,td { text-align:left; padding:7px 8px; border-bottom:1px solid #f1f5f9; white-space:nowrap; }
+  th { color:#64748b; font-weight:600; background:#f8fafc; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }
+  .auto{background:#dcfce7;color:#15803d} .review{background:#fef3c7;color:#b45309} .nomatch{background:#fee2e2;color:#b91c1c}
+  .stat { display:inline-flex; gap:6px; align-items:center; background:#fff; border:1px solid var(--line); border-radius:8px; padding:6px 12px; font-size:12px; }
+  .stat b { color:var(--b2); }
+  .muted { color:#94a3b8; font-size:12px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .scroll { overflow:auto; max-height:340px; border:1px solid var(--line); border-radius:8px; }
+  .hide { display:none; }
+  .ok { color:#15803d; }
+  label.w { display:flex; align-items:center; gap:8px; font-size:12px; margin-bottom:8px;}
+  label.w input[type=range]{ flex:1; }
+  @media(max-width:760px){ .grid2{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="demo">🔎 <b>프리뷰(데모)</b> — 화면 미리보기입니다. 실제 로그인·데이터·매핑은 노트북 앱(<code>npm start</code>)에서 동작합니다. 비밀번호는 저장/전송되지 않습니다.</div>
+<header>
+  <div class="logo">AMS</div>
+  <div><h1>AMS Desktop — 매핑 콘솔</h1><div class="sub">로컬 전용 · 비밀번호·로그는 PC에만</div></div>
+  <div style="margin-left:auto">
+    <span class="stat">금고 <b>열림</b></span>
+    <span class="stat">리스트 <b>있음</b></span>
+    <span class="stat">브라우저 <b>닫힘</b></span>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <h2>① 고객 (금고)</h2>
+    <p class="hint">매핑 시스템 로그인 정보를 암호화해 저장합니다. (비번은 이 PC에만)</p>
+    <div>• <b>Ctrip</b> <span class="muted">https://connect.trip.com/login</span></div>
+    <div class="row" style="margin-top:12px">
+      <input placeholder="이름 (예: Agoda)" /><input placeholder="로그인 URL" size="30" />
+      <input placeholder="ID / 이메일" /><input type="password" placeholder="비밀번호" />
+      <button onclick="alert('데모 화면입니다. 실제 추가는 노트북 앱에서 동작합니다.')">추가</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>② 작업 큐 (매핑 리스트에서 추출)</h2>
+    <p class="hint">파일: <b>API Report_20260529.xlsx</b> — 채널을 고르면 'Unmapped' 룸만 자동으로 뽑습니다.</p>
+    <div class="row">
+      <select id="channel">
+        <option value="Ctrip KR" data-r="4141" data-h="1415">Ctrip KR (4141 unmapped)</option>
+        <option value="Ctrip VN" data-r="3732" data-h="1092">Ctrip VN (3732 unmapped)</option>
+        <option value="Agoda" data-r="10281" data-h="2699">Agoda (10281 unmapped)</option>
+        <option value="Elong" data-r="8924" data-h="2859">Elong (8924 unmapped)</option>
+        <option value="Dida" data-r="11178" data-h="2968">Dida (11178 unmapped)</option>
+        <option value="Alitrip" data-r="16147" data-h="3902">Alitrip (16147 unmapped)</option>
+      </select>
+      <button onclick="buildQueue()">작업 큐 만들기</button>
+    </div>
+    <div id="queueStats" style="margin-top:12px"></div>
+    <div class="scroll hide" id="queueWrap" style="margin-top:10px"><table id="queueTable"></table></div>
+  </div>
+
+  <div class="card">
+    <h2>③ 매핑 실행 (추천 — 최종 클릭은 사람)</h2>
+    <p class="hint">고객 브라우저를 열고, 매핑 화면에서 "현재 화면 추천"을 누르면 AMS가 최적 후보를 골라 강조합니다. <b>[Mapping] 클릭은 직접</b> 하세요.</p>
+    <div class="row">
+      <select><option>Ctrip</option></select>
+      <button onclick="alert('데모입니다. 실제 브라우저는 노트북 앱에서 열립니다.')">브라우저 열기</button>
+      <button class="ghost" onclick="recommend()">현재 화면 추천 ★</button>
+      <span id="runMsg" class="muted"></span>
+    </div>
+    <div class="scroll hide" id="resultWrap" style="margin-top:12px"><table id="resultTable"></table></div>
+  </div>
+
+  <div class="card">
+    <h2>④ 알고리즘 설정</h2>
+    <p class="hint">점수 가중치·임계값. 슬라이더를 움직이면 다음 추천부터 반영됩니다.</p>
+    <div class="grid2">
+      <div id="weights"></div>
+      <div>
+        <label class="w">자동확정 ≥ <input type="number" value="90" style="width:70px"/></label>
+        <label class="w">검토 ≥ <input type="number" value="65" style="width:70px"/></label>
+        <button onclick="document.getElementById('setMsg').textContent='저장됨 (데모)'">설정 저장</button>
+        <span id="setMsg" class="ok" style="font-size:12px"></span>
+      </div>
+    </div>
+  </div>
+
+  <p class="muted" style="text-align:center">AMS Desktop · 로컬 매핑 콘솔 프리뷰 · 코드: github.com/bstars00-rgb/ams-desktop (private)</p>
+</div>
+
+<script>
+const $=(id)=>document.getElementById(id);
+const WK=["name","bed","type","grade","view","area","smoke"], WL={name:"이름",bed:"베드",type:"타입",grade:"등급",view:"뷰",area:"평수",smoke:"흡연"}, WV={name:25,bed:25,type:15,grade:10,view:10,area:10,smoke:5};
+$("weights").innerHTML = WK.map(k=>`<label class="w">${WL[k]} <input type="range" min="0" max="100" value="${WV[k]}" oninput="this.nextElementSibling.textContent=this.value"/><span style="width:28px;text-align:right">${WV[k]}</span></label>`).join("");
+
+const SAMPLE = [
+  ["171539","SADARA Boutique Beach Resort Bali","Sadara premier","Double","42"],
+  ["171539","SADARA Boutique Beach Resort Bali","Sadara Suite ocean View","King","70"],
+  ["101842","Grand Mirage Resort","Deluxe Garden View","Double","38"],
+  ["103785","Bali Dynasty Resort","Superior Twin","Single","30"],
+  ["103913","The Kuta Beach Heritage","Premier King","King","45"],
+];
+function buildQueue(){
+  const o=$("channel").selectedOptions[0];
+  $("queueStats").innerHTML=`<span class="stat">채널 <b>${o.value}</b></span> <span class="stat">룸 <b>${o.dataset.r}</b></span> <span class="stat">호텔 <b>${o.dataset.h}</b></span> <span class="muted">→ queue.csv · codes.txt 생성됨</span>`;
+  const cols=["Hotel Code","Hotel Name","Room Name","Bed Type","Room Size"];
+  $("queueWrap").classList.remove("hide");
+  $("queueTable").innerHTML="<tr>"+cols.map(c=>`<th>${c}</th>`).join("")+"</tr>"+SAMPLE.map(r=>"<tr>"+r.map(c=>`<td>${c}</td>`).join("")+"</tr>").join("");
+}
+const RECS=[
+  {merchant:"Deluxe Double Sea View",best:"Deluxe Double Sea View",score:100,band:"AUTO"},
+  {merchant:"Premium Garden Double",best:"Premium Garden Double",score:100,band:"AUTO"},
+  {merchant:"Superior Double Room",best:"Superior Double",score:88,band:"REVIEW"},
+  {merchant:"Seaside Suite",best:"Seaside Suite",score:75,band:"REVIEW"},
+  {merchant:"Family Deluxe 3 Persons",best:"(매칭 없음 — 신규 생성)",score:48,band:"NOMATCH"},
+];
+let ri=0, shown=[];
+function recommend(){
+  const r=RECS[ri%RECS.length]; ri++; shown.unshift({...r,ts:new Date().toTimeString().slice(0,8)});
+  $("runMsg").innerHTML=`<span class="ok">추천: ${r.best} (${r.score}%)</span> — 브라우저의 파란 줄 확인 후 직접 클릭`;
+  $("resultWrap").classList.remove("hide");
+  const cls=b=>b==="AUTO"?"auto":b==="REVIEW"?"review":"nomatch";
+  $("resultTable").innerHTML="<tr><th>시간</th><th>고객사 룸</th><th>추천 우리 룸</th><th>점수</th><th>밴드</th></tr>"+
+    shown.map(r=>`<tr><td>${r.ts}</td><td>${r.merchant}</td><td>${r.best}</td><td>${r.score}%</td><td><span class="pill ${cls(r.band)}">${r.band}</span></td></tr>`).join("");
+}
+</script>
+</body>
+</html>
